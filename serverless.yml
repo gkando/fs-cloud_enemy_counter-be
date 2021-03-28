@@ -1,0 +1,100 @@
+service: fs-enemy-counter-be-dev
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-north-1
+  stage: dev
+  apiGateway:
+    apiKeys:
+      - killsSubmitKey
+  lambdaHashingVersion: 20201221
+
+functions:
+  post:
+    handler: api/post.newKills
+    memorySize: 128
+    description: Handle submission of new enemy kills from game server.
+    events:
+      - http:
+          path: kills
+          method: post
+          private: true
+          cors: true
+    environment:
+      PLAYER_KILLS_TABLE: !Ref PlayerKillsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action: dynamodb:PutItem
+        Resource: !GetAtt PlayerKillsTable.Arn
+  killsStreamProcessor:
+    handler: api/kills-stream-processor.update
+    events:
+      - stream:
+          type: dynamodb
+          arn: !GetAtt PlayerKillsTable.StreamArn
+          batchSize: 100
+          maximumRetryAttempts: 10
+          enabled: true
+    environment:
+      TOTAL_KILLS_TABLE: !Ref TotalKillsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: !GetAtt TotalKillsTable.Arn
+  get:
+    handler: api/get.kills
+    events:
+      - http:
+          path: totals
+          method: get
+          cors: true
+    environment:
+      TOTAL_KILLS_TABLE: !Ref TotalKillsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Scan
+        Resource: !GetAtt TotalKillsTable.Arn
+
+resources:
+  Resources:
+    PlayerKillsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+    TotalKillsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+  Outputs:
+    PlayerKillsTableName:
+      Value: !Ref PlayerKillsTable
+      Description: "DynamoDB table"
+    TotalKillsTableName:
+      Value: !Ref TotalKillsTable
+      Description: "Total Kills from Player Kills Table"
+
+plugins:
+  - serverless-iam-roles-per-function

@@ -1,0 +1,35 @@
+{
+  "name": "fs-cloud-enemy-counter-be",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:gkando/fs-cloud_enemy_counter-be.git",
+  "author": "George Kando <gkando@gmail.com>",
+  "scripts": {
+    "deploy": "serverless deploy"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.73",
+    "@types/chai": "^4.2.15",
+    "@types/dotenv-safe": "^8.1.1",
+    "@types/lambda-tester": "^3.6.1",
+    "@types/mocha": "^8.2.2",
+    "@types/sinon": "^9.0.11",
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
+    "aws-sdk": "^2.874.0",
+    "chai": "^4.3.4",
+    "eslint": "^7.22.0",
+    "lambda-tester": "^4.0.1",
+    "mocha": "^8.3.2",
+    "serverless": "^2.31.0",
+    "serverless-iam-roles-per-function": "^3.1.0",
+    "serverless-ignore": "^0.1.6",
+    "serverless-offline": "^6.9.0",
+    "serverless-plugin-typescript": "^1.1.9",
+    "sinon": "^10.0.0",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  }
+}
