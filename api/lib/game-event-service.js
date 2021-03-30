@@ -1,8 +1,7 @@
 const MAX_BATCH = 5;
 
-exports.create = async (payload) => {
+exports.create = async (gameEvents) => {
   let players = [];
-  const gameEvents = payload;
   gameEvents.forEach((item) => {
     players.push({
       PutRequest: {
@@ -14,11 +13,9 @@ exports.create = async (payload) => {
       },
     });
   });
-
   // dynamoDb batchWrite requirements:
   //    Array Members: Minimum number of 1 item. Maximum number of 25 items.
   //    Set max value lower to demonstrate array chunking
-
   const chunk = (arr, size) =>
     Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
       arr.slice(i * size, i * size + size)

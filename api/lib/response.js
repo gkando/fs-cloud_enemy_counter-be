@@ -4,6 +4,6 @@ module.exports.json = (body = {}, status = 200) => {
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
-    body: body != null ? JSON.stringify(body) : "",
+    body: body != null ? JSON.stringify(body, null, 2) : "",
   };
 };

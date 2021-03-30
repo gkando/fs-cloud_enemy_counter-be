@@ -8,7 +8,18 @@ provider:
   apiGateway:
     apiKeys:
       - eventSubmitKey
+  websocketsApiName: fs-enemy-counter-ws
   lambdaHashingVersion: 20201221
+  resourcePolicy:
+    - Effect: Allow
+      Principal: "*"
+      Action: execute-api:Invoke
+      Resource:
+        - execute-api:/*/*/*
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}
 
 functions:
   PostKills:
@@ -64,7 +75,58 @@ functions:
           - dynamodb:GetItem
           - dynamodb:Scan
         Resource: !GetAtt TotalKillsTable.Arn
-
+  WsHandler:
+    handler: api/ws-connect.handler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $default
+      - websocket:
+          route: $disconnect
+    environment:
+      CONNECTIONS_TABLE: !Ref ConnectionsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource: !GetAtt ConnectionsTable.Arn
+  WsBroadcast:
+    handler: api/ws-broadcast.update
+    events:
+      - stream:
+          type: dynamodb
+          arn: !GetAtt TotalKillsTable.StreamArn
+          batchSize: 100
+          maximumRetryAttempts: 10
+          enabled: true
+    environment:
+      CONNECTIONS_TABLE: !Ref ConnectionsTable
+      TOTAL_KILLS_TABLE: !Ref TotalKillsTable
+      API_GATEWAY_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api.${self:custom.region}.amazonaws.com/${self:custom.stage}"
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource: !GetAtt TotalKillsTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource: !GetAtt ConnectionsTable.Arn
 resources:
   Resources:
     PlayerKillsTable:
@@ -93,6 +155,18 @@ resources:
         KeySchema:
           - AttributeName: pk
             KeyType: HASH
+    ConnectionsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+
   Outputs:
     PlayerKillsTableName:
       Value: !Ref PlayerKillsTable
@@ -100,6 +174,9 @@ resources:
     TotalKillsTableName:
       Value: !Ref TotalKillsTable
       Description: "Total Kills from Player Kills Table"
+    ConnectionsTableName:
+      Value: !Ref ConnectionsTable
+      Description: "Connected WS Clients"
 
 plugins:
   - serverless-iam-roles-per-function
