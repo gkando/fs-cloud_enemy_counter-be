@@ -1,4 +1,4 @@
-service: fs-enemy-counter-be-dev
+service: fs-enemy-counter-service
 
 provider:
   name: aws
@@ -7,12 +7,12 @@ provider:
   stage: dev
   apiGateway:
     apiKeys:
-      - killsSubmitKey
+      - eventSubmitKey
   lambdaHashingVersion: 20201221
 
 functions:
-  post:
-    handler: api/post.newKills
+  PostKills:
+    handler: api/post.handler
     memorySize: 128
     description: Handle submission of new enemy kills from game server.
     events:
@@ -25,10 +25,13 @@ functions:
       PLAYER_KILLS_TABLE: !Ref PlayerKillsTable
     iamRoleStatements:
       - Effect: Allow
-        Action: dynamodb:PutItem
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:BatchWriteItem
         Resource: !GetAtt PlayerKillsTable.Arn
-  killsStreamProcessor:
-    handler: api/kills-stream-processor.update
+  streamProcessor:
+    handler: api/stream-processor.update
     events:
       - stream:
           type: dynamodb
@@ -43,9 +46,10 @@ functions:
         Action:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
+          - dynamodb:BatchWriteItem
         Resource: !GetAtt TotalKillsTable.Arn
-  get:
-    handler: api/get.kills
+  GetKills:
+    handler: api/get.handler
     events:
       - http:
           path: totals
