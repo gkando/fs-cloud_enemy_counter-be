@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
+      - run: yarn install --frozen-lockfile
       - name: Install IAM Plugin and Deploy
         uses: serverless/github-action@v1.53.0
         with:
