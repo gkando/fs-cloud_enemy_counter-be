@@ -7,7 +7,7 @@ provider:
   stage: dev
   apiGateway:
     apiKeys:
-      - eventSubmitKey
+      - ${opt:stage}-apiKey
   lambdaHashingVersion: 20201221
 
 functions:
@@ -32,6 +32,7 @@ functions:
         Resource: !GetAtt PlayerKillsTable.Arn
   streamProcessor:
     handler: api/stream-processor.update
+    description: Streams event processor for PlayerKillsTable. Adds new kills to the TotalsTable.
     events:
       - stream:
           type: dynamodb
