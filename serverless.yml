@@ -7,7 +7,7 @@ provider:
   stage: dev
   apiGateway:
     apiKeys:
-      - ${opt:stage}-apiKey
+      - eventSubmitKey
   lambdaHashingVersion: 20201221
 
 functions:
