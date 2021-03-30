@@ -1,8 +1,9 @@
-const DocumentClient = require("aws-sdk/clients/dynamodb").DocumentClient;
-const dynamodb = new DocumentClient();
+import { APIGatewayProxyHandler } from "aws-lambda";
+const DynamoDB = require("aws-sdk/clients/dynamodb");
+const db = new DynamoDB();
 
 // updates clients with kill totals
-module.exports.kills = async (event, context) => {
+module.exports.handler = async (event) => {
   try {
     const params = {
       TableName: process.env.TOTAL_KILLS_TABLE,
@@ -11,11 +12,13 @@ module.exports.kills = async (event, context) => {
       },
     };
     const data = await db.getItem(params).promise();
+    const totalKills = data.Item.totalKills.N;
     return {
       statusCode: 200,
+      headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": true },
       body: JSON.stringify(
         {
-          data,
+          totalKills,
         },
         null,
         2
